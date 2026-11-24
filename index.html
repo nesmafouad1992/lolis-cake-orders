@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v10 -->
+<!-- build 2026-11-25-v11 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -275,7 +275,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     };
   }
   $('hlogo').src=LOGO;
-  var ITEMS=['كيك 1 (Cake 1)','كيك 2 (Cake 2)','كيك 3 (Cake 3)','كب كيك عجين بسكر','كب كيك كريمة','كيك بوبس (Cake pops)','كوكيز (Cookies)'];
+  var ITEMS=['كيك 1 (Cake 1)','كيك 2 (Cake 2)','كيك 3 (Cake 3)','كب كيك فوندنت','كب كيك كريمة','كيك بوبس (Cake pops)','كوكيز (Cookies)'];
   $('items').innerHTML=ITEMS.map(function(n,i){return '<div class="irow"><span>'+n+'</span><input id="iq'+i+'" type="number" inputmode="numeric" min="0" placeholder="العدد"><input id="ip'+i+'" type="number" inputmode="decimal" min="0" placeholder="السعر"></div>'}).join('');
   ITEMS.forEach(function(n,i){$('iq'+i).oninput=calc;$('ip'+i).oninput=calc});
   function itemRows(){var r=[];ITEMS.forEach(function(n,i){var p=num($('ip'+i).value);if(p>0)r.push({n:n,q:num($('iq'+i).value)||1,p:p})});return r}
