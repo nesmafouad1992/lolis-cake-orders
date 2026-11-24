@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v12 -->
+<!-- build 2026-11-25-v13 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -139,7 +139,11 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     <div class="card" style="padding:12px;margin-top:12px"><b>نسخة احتياطية</b><div class="muted" style="margin:4px 0 8px">الأوردرات محفوظة على المتصفح بس. خد نسخة في آخر كل يوم بعد الأوردرات: دوس «احفظ على درايف» واختار Drive والحساب.</div>
     <button class="btn" id="bk">حفظ نسخة احتياطية</button>
     <button class="btn" id="shr">احفظ على درايف / مشاركة</button>
-    <button class="btn alt" id="rs">استرجاع نسخة</button>
+    <div id="bkmsg" class="muted" style="display:none;margin:8px 0;padding:10px;border-radius:12px;background:var(--blue);color:var(--ink);line-height:1.8"></div>
+    <button class="btn" id="txs">مشاركة النسخة كنص (واتساب / جيميل / ملاحظات)</button>
+    <button class="btn alt" id="rs">استرجاع نسخة (ملف)</button>
+    <textarea id="rtx" placeholder="لو النسخة نص: الصقه هنا" style="min-height:60px"></textarea>
+    <button class="btn alt" id="rtb" style="margin-top:6px">استرجاع من النص</button>
     <input type="file" id="rsf" style="display:none"></div>
   </section>
 </main>
@@ -362,16 +366,31 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1500);toast('تم تجهيز النسخة الاحتياطية');
   };
   $('rs').onclick=function(){$('rsf').click()};
-  $('rsf').onchange=function(){
-    var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();
-    r.onload=function(){try{
-      var d=JSON.parse(r.result),inc=d&&d.orders;if(!Array.isArray(inc))throw 0;
+  function restoreText(txt){try{
+      var d=JSON.parse(txt),inc=d&&d.orders;if(!Array.isArray(inc))throw 0;
       var have={};orders.forEach(function(o){have[o.no]=1});var added=0;
       inc.forEach(function(o){if(o&&typeof o.no==='number'&&!have[o.no]){orders.push(o);have[o.no]=1;added++}});
       orders.sort(function(a,b){return a.no-b.no});persist();render();$('nextNo').textContent=nextNo();hist();toast('تم استرجاع '+added+' أوردر');
-    }catch(e){toast('الملف مش نسخة صحيحة')}};
+    }catch(e){toast('الملف مش نسخة صحيحة')}}
+  $('rsf').onchange=function(){
+    var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();
+    r.onload=function(){restoreText(r.result)};
     r.readAsText(f);this.value='';
   };
+  $('rtb').onclick=function(){var t=$('rtx').value.trim();if(!t){toast('الصق النص الأول');return}restoreText(t);$('rtx').value=''};
+  function msg(t){var m=$('bkmsg');m.style.display='';m.innerHTML=t}
+  var HOWDRIVE='<b>رفع يدوي على درايف:</b> افتح تطبيق Google Drive، اتأكد إن الحساب اللي فوق (الصورة الدايرية) هو nesma.mohamed.fouad@gmail.com (دوس عليها واختاره لو غير كده)، دوس علامة + ثم «رفع»، واختار الملف من «التنزيلات / Downloads».';
+  $('txs').onclick=function(){
+    var slim=orders.map(function(o){var c={};for(var k in o)c[k]=o[k];c.img='';return c});
+    var txt=JSON.stringify({app:'cake_orders',v:1,orders:slim});
+    if(navigator.share){navigator.share({title:'Loli Cake backup '+today(),text:txt}).then(function(){toast('تمت المشاركة')}).catch(function(e){if(e&&e.name==='AbortError')return;copyTxt(txt,(e&&e.name)||'err')});return}
+    copyTxt(txt,'no-share');
+  };
+  function copyTxt(txt,code){
+    var done=function(ok){msg(ok?'المشاركة مش متاحة ('+code+'). النص اتنسخ: افتح واتساب أو جيميل أو الملاحظات والصقه وابعته لنفسك. (النسخة النصية من غير صور الكيك.)':'تعذّر النسخ ('+code+')')};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){done(true)}).catch(function(){done(false)})}else done(false);
+  }
+
 
   $('shr').onclick=function(){
     var data=JSON.stringify({app:'cake_orders',v:1,orders:orders}),name='cake-orders-backup-'+today();
@@ -379,13 +398,14 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     try{cands.push(new File([data],name+'.json',{type:'application/json'}));cands.push(new File([data],name+'.txt',{type:'text/plain'}))}catch(e){}
     var errs=[];
     function fallback(){
-      toast('المشاركة مش شغالة'+(errs.length?' ('+errs.join(',')+')':'')+'، هنزّل الملف وارفعه على درايف');$('bk').onclick();
+      $('bk').onclick();
+      msg('المشاركة المباشرة على درايف مش شغالة على التليفون ده'+(errs.length?' ('+errs.join(',')+')':'')+'. الملف اتنزّل على التليفون (التنزيلات / Downloads).<br>'+HOWDRIVE+'<br>أو دوس «مشاركة النسخة كنص» وابعتها لنفسك على واتساب أو جيميل.');
     }
     function tryNext(i){
-      if(i>=cands.length||!navigator.share||!navigator.canShare){fallback();return}
+      if(i>=cands.length||!navigator.share||!navigator.canShare){errs.push(navigator.share?'cs':'no-share');fallback();return}
       var f=cands[i],ok=false;
       try{ok=navigator.canShare({files:[f]})}catch(e){ok=false}
-      if(!ok){errs.push('cs');tryNext(i+1);return}
+      if(!ok){errs.push('cs'+i);tryNext(i+1);return}
       var p;try{p=navigator.share({files:[f]})}catch(e){errs.push((e&&e.name)||'err');tryNext(i+1);return}
       p.then(function(){toast('تمت المشاركة')}).catch(function(e){
         if(e&&e.name==='AbortError')return;
@@ -394,6 +414,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     }
     tryNext(0);
   };
+
 
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){r.update()}).catch(function(){});var rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(rl)return;rl=true;if(!document.getElementById('ov')||document.getElementById('ov').className.indexOf('show')<0)location.reload()})})}
   tab(1);
