@@ -70,7 +70,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v5 -->
+<!-- build 2026-11-25-v6 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -114,6 +114,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
       <input id="dep" type="number" inputmode="decimal" min="0" placeholder="0">
       <div class="total"><span>الإجمالي</span><b id="tot">0 ج.م</b></div>
       <div class="total" style="margin-top:8px"><span>المتبقي</span><b id="rem">0 ج.م</b></div>
+      <button class="btn alt" id="ecn" style="display:none;margin-top:0;margin-bottom:8px">إلغاء التعديل</button>
       <button class="btn" id="save">احفظ الأوردر واطلع الفاتورة</button>
     </div>
   </section>
@@ -170,7 +171,18 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
   function tab(n){
     $('v1').style.display=n==1?'':'none';$('v2').style.display=n==2?'':'none';$('v3').style.display=n==3?'':'none';
     $('t1').className=n==1?'on':'';$('t2').className=n==2?'on':'';$('t3').className=n==3?'on':'';
-    if(n==2)render();else if(n==3)hist();else $('nextNo').textContent=nextNo();
+    if(n==2)render();else if(n==3)hist();else setNo();
+  }
+  var editing=null;
+  function setNo(){$('nextNo').textContent=editing?'تعديل أوردر رقم '+editing.no:nextNo();$('ecn').style.display=editing?'':'none';$('save').textContent=editing?'احفظ التعديلات':'احفظ الأوردر واطلع الفاتورة'}
+  function clearForm(){editing=null;['name','phone','det','time','addr','fee','price','dep'].forEach(function(k){$(k).value=''});$('rmImg').onclick();ITEMS.forEach(function(n,i){$('iq'+i).value='';$('ip'+i).value=''});$('date').value=today();setDel(false);setNo()}
+  function editOrder(o){
+    editing=o;$('name').value=o.name||'';$('phone').value=o.phone||'';$('det').value=o.det||'';$('date').value=o.date||today();$('time').value=o.time||'';
+    $('addr').value=o.addr||'';$('fee').value=o.fee||'';$('price').value=o.price||'';$('dep').value=paid(o)||'';
+    ITEMS.forEach(function(n,i){$('iq'+i).value='';$('ip'+i).value=''});
+    (o.items||[]).forEach(function(x){var i=ITEMS.indexOf(x.n);if(i>=0){$('iq'+i).value=x.q;$('ip'+i).value=x.p}});
+    imgData=o.img||'';if(imgData){$('prevImg').src=imgData;$('prev').style.display=''}else $('prev').style.display='none';
+    setDel(!!o.delivery);close();tab(1);window.scrollTo(0,0);
   }
   function calc(){var s=itemsSum(),t=num($('price').value)+s+(delivery?num($('fee').value):0);$('isum').textContent=s?'مجموع الأصناف: '+fmt(s)+' ج.م':'';$('tot').textContent=fmt(t)+' ج.م';$('rem').textContent=fmt(Math.max(0,t-num($('dep').value)))+' ج.م'}
   function setDel(v){
@@ -189,17 +201,26 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     if(!det){toast('اكتب تفاصيل الكيك');$('det').focus();return}
     if(!$('date').value){toast('اختار ميعاد الاستلام');return}
     var price=num($('price').value),fee=delivery?num($('fee').value):0,dep=num($('dep').value),is=itemsSum();
-    if(dep>price+fee+is){toast('العربون أكبر من الإجمالي');$('dep').focus();return}
+    var tot=price+fee+is;
+    if(editing){
+      var e=editing,wasDone=!!e.done;
+      if(wasDone&&tot<=dep){dep=tot}
+      else if(dep>tot){toast('العربون أكبر من الإجمالي');$('dep').focus();return}
+      e.name=name;e.phone=$('phone').value.trim();e.det=det;e.date=$('date').value;e.time=$('time').value;
+      e.delivery=delivery;e.addr=delivery?$('addr').value.trim():'';e.fee=fee;e.price=price;e.total=tot;e.items=itemRows();e.dep=dep;e.img=imgData;
+      if(wasDone&&tot>dep){delete e.done;delete e.doneAt}
+      persist();var shown=e;clearForm();toast('تم حفظ التعديل على أوردر رقم '+shown.no);render();hist();showInv(shown);return;
+    }
+    if(dep>tot){toast('العربون أكبر من الإجمالي');$('dep').focus();return}
     var o={no:nextNo(),name:name,phone:$('phone').value.trim(),det:det,date:$('date').value,time:$('time').value,
-      delivery:delivery,addr:delivery?$('addr').value.trim():'',fee:fee,price:price,total:price+fee+is,items:itemRows(),dep:dep,img:imgData,
+      delivery:delivery,addr:delivery?$('addr').value.trim():'',fee:fee,price:price,total:tot,items:itemRows(),dep:dep,img:imgData,
       created:today()};
     orders.push(o);persist();
-    ['name','phone','det','time','addr','fee','price','dep'].forEach(function(k){$(k).value=''});$('rmImg').onclick();ITEMS.forEach(function(n,i){$('iq'+i).value='';$('ip'+i).value=''});
-    $('date').value=today();setDel(false);
-    $('nextNo').textContent=nextNo();
+    clearForm();
     toast('تم حفظ الأوردر رقم '+o.no);
     showInv(o);
   };
+  $('ecn').onclick=function(){clearForm();toast('اتلغى التعديل');tab(2)};
   function render(){
     var m=$('month').value||today().slice(0,7);
     var arr=orders.filter(function(o){return (o.created||'').slice(0,7)===m}).sort(function(a,b){return b.no-a.no});
@@ -234,10 +255,12 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
       '<div class="muted" style="text-align:center;margin-top:8px">تاريخ الأوردر: '+esc(dAr(o.created))+'</div><a class="fb" href="'+FB+'" target="_blank" rel="noopener">تابعونا على فيسبوك: Loli’s Cake</a></div>'+
       '<button class="btn noprint" id="prt">حمّل الفاتورة PDF</button>'+
       '<button class="btn noprint" id="dn">'+(o.done?'إلغاء «اكتمل»':'اكتمل: تم الاستلام ودفع المتبقي')+'</button>'+
+      '<button class="btn alt noprint" id="ed">تعديل الأوردر</button>'+
       '<button class="btn alt noprint" id="cls">إغلاق</button>';
     $('ov').className='ov show';
     $('prt').onclick=function(){pdf(o)};
     $('cls').onclick=close;
+    $('ed').onclick=function(){editOrder(o)};
     $('dn').onclick=function(){
       var b=$('dn');
       if(!b.getAttribute('data-sure')){b.setAttribute('data-sure','1');b.textContent=o.done?'اضغط تاني لإلغاء «اكتمل»':'اضغط تاني للتأكيد: اكتمل وتم دفع '+fmt(rem(o))+' ج.م';return}
@@ -281,8 +304,9 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     var a=[];for(var i=0;i<12;i++)a.push({c:0,t:0,d:0});
     orders.forEach(function(o){var p=(o.created||'').split('-');if(+p[0]===y){var m=a[+p[1]-1];if(m){m.c++;m.t+=o.total;m.d+=paid(o)}}});
     var C=0,T=0,D=0,rows='';
-    a.forEach(function(m,i){if(!m.c)return;C+=m.c;T+=m.t;D+=m.d;rows+='<tr><td>'+M[i]+'</td><td>'+m.c+'</td><td>'+fmt(m.t)+'</td><td>'+fmt(m.d)+'</td><td>'+fmt(m.t-m.d)+'</td></tr>'});
-    $('hbox').innerHTML='<div class="card" id="hrep"><img class="logo" src="'+LOGO+'" alt=""><h2 style="text-align:center;color:var(--pink-d)">سجل أوردرات سنة '+y+'</h2>'+(C?'<table class="tbl"><thead><tr><th>الشهر</th><th>الأوردرات</th><th>الإجمالي</th><th>المستلم</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>السنة</td><td>'+C+'</td><td>'+fmt(T)+'</td><td>'+fmt(D)+'</td><td>'+fmt(T-D)+'</td></tr></tfoot></table>':'<div class="empty">مفيش أوردرات في السنة دي.</div>')+'<div class="muted" style="text-align:center;margin-top:8px">المبالغ بالجنيه المصري</div></div>';
+    a.forEach(function(m,i){if(!m.c)return;C+=m.c;T+=m.t;D+=m.d;rows+='<tr class="mrow" data-m="'+(i+1)+'" style="cursor:pointer"><td>'+M[i]+'</td><td>'+m.c+'</td><td>'+fmt(m.t)+'</td><td>'+fmt(m.d)+'</td><td>'+fmt(m.t-m.d)+'</td></tr>'});
+    $('hbox').innerHTML='<div class="card" id="hrep"><img class="logo" src="'+LOGO+'" alt=""><h2 style="text-align:center;color:var(--pink-d)">سجل أوردرات سنة '+y+'</h2><div class="muted noprint" style="text-align:center">دوس على الشهر عشان تفتح أوردراته وتعدّل</div>'+(C?'<table class="tbl"><thead><tr><th>الشهر</th><th>الأوردرات</th><th>الإجمالي</th><th>المستلم</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>السنة</td><td>'+C+'</td><td>'+fmt(T)+'</td><td>'+fmt(D)+'</td><td>'+fmt(T-D)+'</td></tr></tfoot></table>':'<div class="empty">مفيش أوردرات في السنة دي.</div>')+'<div class="muted" style="text-align:center;margin-top:8px">المبالغ بالجنيه المصري</div></div>';
+    Array.prototype.forEach.call($('hbox').querySelectorAll('.mrow'),function(r){r.onclick=function(){var m=r.getAttribute('data-m');$('month').value=y+'-'+(m.length<2?'0':'')+m;tab(2)}});
   }
   $('hpdf').onclick=function(){hist();pdf(null,$('hrep'),'orders-history-'+$('yr').value+'.pdf',$('hpdf'))};
   async function pdf(o,node,fname,btn){
