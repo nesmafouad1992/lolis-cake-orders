@@ -70,7 +70,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v6 -->
+<!-- build 2026-11-25-v7 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -97,7 +97,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
         <div><label for="time">الساعة</label><input id="time" type="time"></div>
       </div>
       <label>طريقة الاستلام</label>
-      <div class="seg"><button id="pick" class="on">استلام من عندنا</button><button id="deliv">توصيل</button></div>
+      <div class="seg"><button id="pick" class="on">استلام</button><button id="deliv">توصيل</button></div>
       <div id="dbox" style="display:none">
         <label for="addr">عنوان التوصيل</label>
         <input id="addr" autocomplete="off">
@@ -241,7 +241,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
       '<div class="ln"><span>العميل</span><b>'+esc(o.name)+'</b></div>'+
       (o.phone?'<div class="ln"><span>رقم التليفون</span><b dir="ltr">'+esc(o.phone)+'</b></div>':'')+
       '<div class="ln"><span>ميعاد الاستلام</span><b>'+esc(dAr(o.date))+(o.time?' - '+esc(o.time):'')+'</b></div>'+
-      '<div class="ln"><span>الطريقة</span><b>'+(o.delivery?'توصيل':'استلام من عندنا')+'</b></div>'+
+      '<div class="ln"><span>الطريقة</span><b>'+(o.delivery?'توصيل':'استلام')+'</b></div>'+
       (o.delivery&&o.addr?'<div class="ln"><span>العنوان</span><b>'+esc(o.addr)+'</b></div>':'')+
       (!o.delivery&&SHOP_ADDR?'<div class="ln"><span>عنوان المحل</span><b>'+esc(SHOP_ADDR)+'</b></div><div class="ln"><span>الموقع على الخريطة</span><b dir="ltr" style="font-size:12px;word-break:break-all"><a href="'+SHOP_MAP+'" target="_blank" rel="noopener" style="color:var(--pink-d)">'+SHOP_MAP+'</a></b></div>':'')+
       '<div style="margin-top:8px"><b>تفاصيل الكيك</b></div><div class="det">'+esc(o.det)+'</div>'+(o.img&&o.img.indexOf('data:image/')===0?'<img class="cake" src="'+o.img+'" alt="">':'')+
