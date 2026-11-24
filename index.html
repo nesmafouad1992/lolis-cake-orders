@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v11 -->
+<!-- build 2026-11-25-v12 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -140,7 +140,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     <button class="btn" id="bk">حفظ نسخة احتياطية</button>
     <button class="btn" id="shr">احفظ على درايف / مشاركة</button>
     <button class="btn alt" id="rs">استرجاع نسخة</button>
-    <input type="file" id="rsf" accept=".json,application/json" style="display:none"></div>
+    <input type="file" id="rsf" style="display:none"></div>
   </section>
 </main>
 
@@ -374,12 +374,27 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
   };
 
   $('shr').onclick=function(){
-    var data=JSON.stringify({app:'cake_orders',v:1,orders:orders}),name='cake-orders-backup-'+today()+'.json';
-    try{var f=new File([data],name,{type:'application/json'});
-      if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:name}).then(function(){toast('تمت المشاركة')}).catch(function(e){if(e&&e.name!=='AbortError')toast('تعذّرت المشاركة، استخدم حفظ نسخة احتياطية')});return}
-    }catch(e){}
-    toast('المشاركة مش متاحة هنا، هنزّل الملف وارفعه على درايف');$('bk').onclick();
+    var data=JSON.stringify({app:'cake_orders',v:1,orders:orders}),name='cake-orders-backup-'+today();
+    var cands=[];
+    try{cands.push(new File([data],name+'.json',{type:'application/json'}));cands.push(new File([data],name+'.txt',{type:'text/plain'}))}catch(e){}
+    var errs=[];
+    function fallback(){
+      toast('المشاركة مش شغالة'+(errs.length?' ('+errs.join(',')+')':'')+'، هنزّل الملف وارفعه على درايف');$('bk').onclick();
+    }
+    function tryNext(i){
+      if(i>=cands.length||!navigator.share||!navigator.canShare){fallback();return}
+      var f=cands[i],ok=false;
+      try{ok=navigator.canShare({files:[f]})}catch(e){ok=false}
+      if(!ok){errs.push('cs');tryNext(i+1);return}
+      var p;try{p=navigator.share({files:[f]})}catch(e){errs.push((e&&e.name)||'err');tryNext(i+1);return}
+      p.then(function(){toast('تمت المشاركة')}).catch(function(e){
+        if(e&&e.name==='AbortError')return;
+        errs.push((e&&e.name)||'err');tryNext(i+1);
+      });
+    }
+    tryNext(0);
   };
+
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){r.update()}).catch(function(){});var rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(rl)return;rl=true;if(!document.getElementById('ov')||document.getElementById('ov').className.indexOf('show')<0)location.reload()})})}
   tab(1);
 })();
