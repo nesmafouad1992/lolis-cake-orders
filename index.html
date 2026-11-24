@@ -38,7 +38,8 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 .total b{font-size:22px;font-family:"Baloo Bhaijaan 2",Tajawal,sans-serif}
 .btn{width:100%;margin-top:14px;border:0;background:var(--pink-d);color:#fff;font:800 18px "Baloo Bhaijaan 2",Tajawal,sans-serif;padding:12px;border-radius:16px;cursor:pointer}
 .btn.alt{background:transparent;color:var(--pink-d);border:2px solid var(--pink-d);margin-top:8px}
-.stats{display:flex;gap:10px;margin-bottom:12px}
+.stats{display:flex;gap:6px;margin-bottom:12px}
+.stat{padding:10px 4px!important}.stat b{font-size:18px!important}.stat span{font-size:12px}
 .stat{flex:1;background:var(--blue);border-radius:18px;padding:12px;text-align:center}
 .stat b{display:block;font:800 22px "Baloo Bhaijaan 2",Tajawal,sans-serif;color:var(--pink-d)}
 .stat span{color:var(--muted);font-size:14px}
@@ -69,7 +70,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v4 -->
+<!-- build 2026-11-25-v5 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -124,6 +125,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     <div class="stats">
       <div class="stat"><b id="sCount">0</b><span>عدد الأوردرات</span></div>
       <div class="stat"><b id="sSum">0</b><span>إجمالي الشهر (ج.م)</span></div>
+      <div class="stat"><b id="sPaid">0</b><span>المستلم (ج.م)</span></div>
       <div class="stat"><b id="sRem">0</b><span>المتبقي (ج.م)</span></div>
     </div>
     <div id="list"></div>
@@ -158,7 +160,8 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
   function num(v){var n=parseFloat(v);return isNaN(n)||n<0?0:n}
   function fmt(n){return Number(n).toLocaleString('en-US')}
-  function rem(o){return Math.max(0,o.total-(o.dep||0))}
+  function rem(o){return o.done?0:Math.max(0,o.total-(o.dep||0))}
+  function paid(o){return o.done?o.total:Math.min(o.total,o.dep||0)}
   function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
   function dAr(iso){if(!iso)return '—';var p=iso.split('T')[0].split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);return d.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
   var SHOP_ADDR='٤٥ ع حدائق الاهرام البوابة ٤ امام الخزان',SHOP_MAP='https://goo.gl/maps/5MMRBdFMvBJ57hVS9?g_st=ac';
@@ -200,13 +203,13 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
   function render(){
     var m=$('month').value||today().slice(0,7);
     var arr=orders.filter(function(o){return (o.created||'').slice(0,7)===m}).sort(function(a,b){return b.no-a.no});
-    var sum=0,rm=0;arr.forEach(function(o){sum+=o.total;rm+=rem(o)});
+    var sum=0,rm=0,pd=0;arr.forEach(function(o){sum+=o.total;rm+=rem(o);pd+=paid(o)});$('sPaid').textContent=fmt(pd);
     $('sCount').textContent=arr.length;$('sSum').textContent=fmt(sum);$('sRem').textContent=fmt(rm);
     var L=$('list');
     if(!arr.length){L.innerHTML='<div class="empty">مفيش أوردرات في الشهر ده. اضغط «أوردر جديد» وابدأ.</div>';return}
     L.innerHTML=arr.map(function(o){
       return '<div class="card ord" data-no="'+o.no+'">'+(o.img&&o.img.indexOf('data:image/')===0?'<img class="thumb" src="'+o.img+'" alt="">':'')+'<div style="flex:1"><span class="no">#'+o.no+'</span> <b>'+esc(o.name)+'</b><div class="muted">استلام: '+esc(dAr(o.date))+'</div>'+
-        '<span class="tag '+(o.delivery?'':'p')+'">'+(o.delivery?'توصيل':'استلام')+'</span></div><div style="text-align:left"><b>'+fmt(o.total)+' ج.م</b><div class="muted">'+(rem(o)>0?'متبقي '+fmt(rem(o)):'مدفوع بالكامل')+'</div></div></div>';
+        '<span class="tag '+(o.delivery?'':'p')+'">'+(o.delivery?'توصيل':'استلام')+'</span></div><div style="text-align:left"><b>'+fmt(o.total)+' ج.م</b><div class="muted">'+(o.done?'✓ اكتمل':(rem(o)>0?'متبقي '+fmt(rem(o)):'مدفوع بالكامل'))+'</div></div></div>';
     }).join('');
     Array.prototype.forEach.call(L.querySelectorAll('.ord'),function(el){
       el.onclick=function(){var no=+el.getAttribute('data-no');var o=orders.filter(function(x){return x.no===no})[0];if(o)showInv(o)};
@@ -227,12 +230,20 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
       '<div class="total"><span>الإجمالي</span><b>'+fmt(o.total)+' ج.م</b></div>'+
       (o.dep?'<div class="ln"><span>العربون المدفوع</span><b>'+fmt(o.dep)+' ج.م</b></div>':'')+
       '<div class="total" style="margin-top:8px"><span>المتبقي</span><b>'+fmt(rem(o))+' ج.م</b></div>'+
+      (o.done?'<div class="ln"><span>الحالة</span><b>اكتمل: تم استلام المبلغ بالكامل</b></div>':'')+
       '<div class="muted" style="text-align:center;margin-top:8px">تاريخ الأوردر: '+esc(dAr(o.created))+'</div><a class="fb" href="'+FB+'" target="_blank" rel="noopener">تابعونا على فيسبوك: Loli’s Cake</a></div>'+
       '<button class="btn noprint" id="prt">حمّل الفاتورة PDF</button>'+
+      '<button class="btn noprint" id="dn">'+(o.done?'إلغاء «اكتمل»':'اكتمل: تم الاستلام ودفع المتبقي')+'</button>'+
       '<button class="btn alt noprint" id="cls">إغلاق</button>';
     $('ov').className='ov show';
     $('prt').onclick=function(){pdf(o)};
     $('cls').onclick=close;
+    $('dn').onclick=function(){
+      var b=$('dn');
+      if(!b.getAttribute('data-sure')){b.setAttribute('data-sure','1');b.textContent=o.done?'اضغط تاني لإلغاء «اكتمل»':'اضغط تاني للتأكيد: اكتمل وتم دفع '+fmt(rem(o))+' ج.م';return}
+      if(o.done){delete o.done;delete o.doneAt}else{o.done=true;o.doneAt=today()}
+      persist();render();hist();showInv(o);toast(o.done?'تم تسجيل الأوردر كمكتمل':'اتلغى الاكتمال');
+    };
   }
   $('hlogo').src=LOGO;
   var ITEMS=['كيك (Cake)','كب كيك (Cup cake)','كيك بوبس (Cake pops)','كوكيز (Cookies)'];
@@ -268,10 +279,10 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     var y=+$('yr').value||new Date().getFullYear();
     var M=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     var a=[];for(var i=0;i<12;i++)a.push({c:0,t:0,d:0});
-    orders.forEach(function(o){var p=(o.created||'').split('-');if(+p[0]===y){var m=a[+p[1]-1];if(m){m.c++;m.t+=o.total;m.d+=(o.dep||0)}}});
+    orders.forEach(function(o){var p=(o.created||'').split('-');if(+p[0]===y){var m=a[+p[1]-1];if(m){m.c++;m.t+=o.total;m.d+=paid(o)}}});
     var C=0,T=0,D=0,rows='';
     a.forEach(function(m,i){if(!m.c)return;C+=m.c;T+=m.t;D+=m.d;rows+='<tr><td>'+M[i]+'</td><td>'+m.c+'</td><td>'+fmt(m.t)+'</td><td>'+fmt(m.d)+'</td><td>'+fmt(m.t-m.d)+'</td></tr>'});
-    $('hbox').innerHTML='<div class="card" id="hrep"><img class="logo" src="'+LOGO+'" alt=""><h2 style="text-align:center;color:var(--pink-d)">سجل أوردرات سنة '+y+'</h2>'+(C?'<table class="tbl"><thead><tr><th>الشهر</th><th>الأوردرات</th><th>الإجمالي</th><th>العربون</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>السنة</td><td>'+C+'</td><td>'+fmt(T)+'</td><td>'+fmt(D)+'</td><td>'+fmt(T-D)+'</td></tr></tfoot></table>':'<div class="empty">مفيش أوردرات في السنة دي.</div>')+'<div class="muted" style="text-align:center;margin-top:8px">المبالغ بالجنيه المصري</div></div>';
+    $('hbox').innerHTML='<div class="card" id="hrep"><img class="logo" src="'+LOGO+'" alt=""><h2 style="text-align:center;color:var(--pink-d)">سجل أوردرات سنة '+y+'</h2>'+(C?'<table class="tbl"><thead><tr><th>الشهر</th><th>الأوردرات</th><th>الإجمالي</th><th>المستلم</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>السنة</td><td>'+C+'</td><td>'+fmt(T)+'</td><td>'+fmt(D)+'</td><td>'+fmt(T-D)+'</td></tr></tfoot></table>':'<div class="empty">مفيش أوردرات في السنة دي.</div>')+'<div class="muted" style="text-align:center;margin-top:8px">المبالغ بالجنيه المصري</div></div>';
   }
   $('hpdf').onclick=function(){hist();pdf(null,$('hrep'),'orders-history-'+$('yr').value+'.pdf',$('hpdf'))};
   async function pdf(o,node,fname,btn){
