@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v13 -->
+<!-- build 2026-11-25-v14 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -137,6 +137,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     <div id="hbox"></div>
     <button class="btn" id="hpdf">حمّل السجل PDF</button>
     <div class="card" style="padding:12px;margin-top:12px"><b>نسخة احتياطية</b><div class="muted" style="margin:4px 0 8px">الأوردرات محفوظة على المتصفح بس. خد نسخة في آخر كل يوم بعد الأوردرات: دوس «احفظ على درايف» واختار Drive والحساب.</div>
+    <button class="btn" id="gd" style="background:#1a73e8;color:#fff">احفظ على درايف (مباشر)</button>
     <button class="btn" id="bk">حفظ نسخة احتياطية</button>
     <button class="btn" id="shr">احفظ على درايف / مشاركة</button>
     <div id="bkmsg" class="muted" style="display:none;margin:8px 0;padding:10px;border-radius:12px;background:var(--blue);color:var(--ink);line-height:1.8"></div>
@@ -418,6 +419,32 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){r.update()}).catch(function(){});var rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(rl)return;rl=true;if(!document.getElementById('ov')||document.getElementById('ov').className.indexOf('show')<0)location.reload()})})}
   tab(1);
+  var GCID='1005522057178-fitdu7dvj2srdjgok5t259uiuqvij7k9.apps.googleusercontent.com',GMAIL='nesma.mohamed.fouad@gmail.com';
+  $('gd').onclick=function(){
+    var st=String(Math.random()).slice(2);try{sessionStorage.setItem('gd_state',st);localStorage.setItem('gd_state',st)}catch(e){}
+    var ru=location.origin+location.pathname;
+    location.href='https://accounts.google.com/o/oauth2/v2/auth?client_id='+encodeURIComponent(GCID)+'&redirect_uri='+encodeURIComponent(ru)+'&response_type=token&scope='+encodeURIComponent('https://www.googleapis.com/auth/drive.file')+'&login_hint='+encodeURIComponent(GMAIL)+'&state='+st+'&include_granted_scopes=true';
+  };
+  function gdUpload(tok){
+    var name='cake-orders-backup-'+today()+'.json',data=JSON.stringify({app:'cake_orders',v:1,orders:orders}),b='lolibnd'+Date.now();
+    var body='--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name,mimeType:'application/json'})+'\r\n--'+b+'\r\nContent-Type: application/json\r\n\r\n'+data+'\r\n--'+b+'--';
+    msg('جاري الرفع على درايف...');
+    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'multipart/related; boundary='+b},body:body})
+    .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j,s:r.status}})})
+    .then(function(x){if(x.ok&&x.j.id){msg('✅ تم الرفع على Google Drive: <b>'+x.j.name+'</b> (حساب '+GMAIL+'). هتلاقيه في «Drive الخاص بي».');toast('تم الرفع على درايف')}
+      else msg('الرفع فشل ('+x.s+'): '+((x.j&&x.j.error&&x.j.error.message)||'خطأ')+'<br>'+HOWDRIVE)})
+    .catch(function(e){msg('الرفع فشل (net): اتأكد من الإنترنت وجرب تاني.<br>'+HOWDRIVE)});
+  }
+  (function(){
+    var h=location.hash||'';if(h.indexOf('access_token')<0&&h.indexOf('error=')<0)return;
+    var p={};h.replace(/^#/,'').split('&').forEach(function(kv){var i=kv.indexOf('=');if(i>0)p[kv.slice(0,i)]=decodeURIComponent(kv.slice(i+1))});
+    try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+    tab(3);
+    var st='';try{st=sessionStorage.getItem('gd_state')||localStorage.getItem('gd_state')||''}catch(e){}
+    if(p.error){msg('درايف: '+(p.error==='access_denied'?'اتلغى أو اتمنع الوصول':p.error)+'<br>'+HOWDRIVE);return}
+    if(!p.access_token||(st&&p.state!==st)){msg('تعذر تسجيل الدخول لدرايف.<br>'+HOWDRIVE);return}
+    gdUpload(p.access_token);
+  })();
 })();
 </script>
 </body>
