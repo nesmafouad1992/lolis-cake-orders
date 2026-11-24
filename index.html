@@ -69,6 +69,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
+<!-- build 2026-11-24-v3 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -338,7 +339,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     }catch(e){}
     toast('المشاركة مش متاحة هنا، هنزّل الملف وارفعه على درايف');$('bk').onclick();
   };
-  if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+  if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){r.update()}).catch(function(){});var rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(rl)return;rl=true;if(!document.getElementById('ov')||document.getElementById('ov').className.indexOf('show')<0)location.reload()})})}
   tab(1);
 })();
 </script>
