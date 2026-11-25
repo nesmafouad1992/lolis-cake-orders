@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-25-v18 -->
+<!-- build 2026-11-26-v19 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -240,9 +240,17 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     showInv(o);
   };
   $('ecn').onclick=function(){clearForm();toast('اتلغى التعديل');tab(2)};
+  function byPickup(a,b){
+    var da=a.date||'',db=b.date||'';
+    if(da&&!db)return -1;if(!da&&db)return 1;
+    if(da!==db)return da<db?-1:1;
+    var ta=a.time||'',tb=b.time||'';
+    if(ta!==tb){if(!ta)return 1;if(!tb)return -1;return ta<tb?-1:1}
+    return a.no-b.no;
+  }
   function render(){
     var m=$('month').value||today().slice(0,7);
-    var arr=orders.filter(function(o){return (o.created||'').slice(0,7)===m}).sort(function(a,b){return b.no-a.no});
+    var arr=orders.filter(function(o){return ((o.date||o.created)||'').slice(0,7)===m}).sort(byPickup);
     var sum=0,rm=0,pd=0;arr.forEach(function(o){sum+=o.total;rm+=rem(o);pd+=paid(o)});$('sPaid').textContent=fmt(pd);
     $('sCount').textContent=arr.length;$('sSum').textContent=fmt(sum);$('sRem').textContent=fmt(rm);
     var L=$('list');
@@ -328,7 +336,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
     var y=+$('yr').value||new Date().getFullYear();
     var M=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     var a=[];for(var i=0;i<12;i++)a.push({c:0,t:0,d:0});
-    orders.forEach(function(o){var p=(o.created||'').split('-');if(+p[0]===y){var m=a[+p[1]-1];if(m){m.c++;m.t+=o.total;m.d+=paid(o)}}});
+    orders.forEach(function(o){var p=((o.date||o.created)||'').split('-');if(+p[0]===y){var m=a[+p[1]-1];if(m){m.c++;m.t+=o.total;m.d+=paid(o)}}});
     var C=0,T=0,D=0,rows='';
     a.forEach(function(m,i){if(!m.c)return;C+=m.c;T+=m.t;D+=m.d;rows+='<tr class="mrow" data-m="'+(i+1)+'" style="cursor:pointer"><td>'+M[i]+'</td><td>'+m.c+'</td><td>'+fmt(m.t)+'</td><td>'+fmt(m.d)+'</td><td>'+fmt(m.t-m.d)+'</td></tr>'});
     $('hbox').innerHTML='<div class="card" id="hrep"><img class="logo" src="'+LOGO+'" alt=""><h2 style="text-align:center;color:var(--pink-d)">سجل أوردرات سنة '+y+'</h2><div class="muted noprint" style="text-align:center">دوس على الشهر عشان تفتح أوردراته وتعدّل</div>'+(C?'<table class="tbl"><thead><tr><th>الشهر</th><th>الأوردرات</th><th>الإجمالي</th><th>المستلم</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>السنة</td><td>'+C+'</td><td>'+fmt(T)+'</td><td>'+fmt(D)+'</td><td>'+fmt(T-D)+'</td></tr></tfoot></table>':'<div class="empty">مفيش أوردرات في السنة دي.</div>')+'<div class="muted" style="text-align:center;margin-top:8px">المبالغ بالجنيه المصري</div></div>';
@@ -481,3 +489,4 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </script>
 </body>
 </html>
+
