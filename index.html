@@ -71,7 +71,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
 </style>
 </head>
 <body>
-<!-- build 2026-11-26-v19 -->
+<!-- build 2026-11-26-v20 -->
 <header><img class="hlogo" id="hlogo" alt="Loli’s Cake"><h1>Loli's Cake</h1></header>
 <div class="drip"></div>
 <nav>
@@ -241,6 +241,7 @@ input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-d);
   };
   $('ecn').onclick=function(){clearForm();toast('اتلغى التعديل');tab(2)};
   function byPickup(a,b){
+    var xa=a.done?1:0,xb=b.done?1:0;if(xa!==xb)return xa-xb;
     var da=a.date||'',db=b.date||'';
     if(da&&!db)return -1;if(!da&&db)return 1;
     if(da!==db)return da<db?-1:1;
